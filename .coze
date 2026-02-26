@@ -1,0 +1,10 @@
+[project]
+requires = ["nodejs-24", "python-3.12"]
+
+[dev]
+build = ["pnpm", "--prefix", "frontend", "install"]
+run = ["bash", "scripts/start-dev.sh"]
+
+[deploy]
+build = ["bash", "scripts/build-deploy.sh"]
+run = ["bash", "scripts/run-deploy.sh"]

@@ -1,0 +1,29 @@
+{
+  "name": "notebooklm-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5000 --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "2.3.1",
+    "axios": "1.6.5",
+    "d3": "^7.9.0",
+    "element-plus": "2.5.0",
+    "markmap-lib": "^0.18.12",
+    "markmap-toolbar": "^0.18.12",
+    "markmap-view": "^0.18.12",
+    "pinia": "2.1.7",
+    "reactflow": "^11.11.4",
+    "vue": "3.5.11",
+    "vue-router": "4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.0.0",
+    "terser": "^5.46.0",
+    "typescript": "5.3.3",
+    "vite": "5.0.0"
+  }
+}

@@ -66,7 +66,9 @@ export const documentsApi = {
     })
   },
   
-  delete: (id: number) => api.delete(`/documents/${id}`)
+  delete: (id: number) => api.delete(`/documents/${id}`),
+  
+  getPreviewUrl: (id: number) => `/api/v1/documents/preview/${id}`
 }
 
 export const chatApi = {

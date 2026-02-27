@@ -89,7 +89,11 @@ def build_knowledge_context(documents: List[Document], max_chars: int = 8000) ->
     context_parts = []
     total_chars = 0
     
+    logger.info(f"Building knowledge context from {len(documents)} documents")
+    
     for doc in documents:
+        logger.info(f"Processing document {doc.id}: {doc.filename}, status: {doc.status}, content length: {len(doc.content) if doc.content else 0}")
+        
         if doc.content:
             doc_content = f"【文档: {doc.filename}】\n{doc.content}"
             if total_chars + len(doc_content) > max_chars:
@@ -97,20 +101,30 @@ def build_knowledge_context(documents: List[Document], max_chars: int = 8000) ->
                 if remaining > 200:
                     doc_content = doc_content[:remaining] + "..."
                     context_parts.append(doc_content)
+                    logger.info(f"Truncated document {doc.id} to {remaining} characters")
                 break
             context_parts.append(doc_content)
             total_chars += len(doc_content)
+        else:
+            logger.warning(f"Document {doc.id} ({doc.filename}) has no content")
     
-    return "\n\n".join(context_parts) if context_parts else "暂无相关文档内容。"
+    result = "\n\n".join(context_parts) if context_parts else "暂无相关文档内容。"
+    logger.info(f"Knowledge context built: {len(result)} characters from {len(context_parts)} documents")
+    
+    return result
 
 @router.post("/")
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     """AI Chat endpoint with streaming response"""
     
+    logger.info(f"Chat request for notebook {request.notebook_id}")
+    
     documents = db.query(Document).filter(
         Document.notebook_id == request.notebook_id,
         Document.status == "completed"
     ).all()
+    
+    logger.info(f"Found {len(documents)} completed documents for notebook {request.notebook_id}")
     
     knowledge = build_knowledge_context(documents)
     

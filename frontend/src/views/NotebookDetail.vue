@@ -50,7 +50,14 @@
                 </div>
                 <el-button
                   type="text"
-                  size="small"
+                  size="medium"
+                  :icon="View"
+                  class="doc-preview"
+                  @click.stop="previewDocument(doc.id)"
+                />
+                <el-button
+                  type="text"
+                  size="medium"
                   :icon="Delete"
                   class="doc-delete"
                   @click.stop="deleteDocument(doc.id)"
@@ -452,7 +459,8 @@ import {
   Check,
   ChatDotRound,
   WarningFilled,
-  Plus
+  Plus,
+  View
 } from '@element-plus/icons-vue'
 import { useNotebookStore } from '../stores/notebook'
 import { documentsApi, chatApi, contentApi, podcastApi, notesApi } from '../api/notebooks'
@@ -508,6 +516,8 @@ const aiTools = [
 
 const loadNotebook = async () => {
   loading.value = true
+  store.clearMessages()
+  store.setCurrentConversationId(null)
   try {
     await store.loadNotebook(Number(route.params.id))
     await loadNotes()
@@ -666,6 +676,11 @@ const deleteDocument = async (docId: any) => {
       ElMessage.error('删除失败')
     }
   }
+}
+
+const previewDocument = (docId: number) => {
+  const previewUrl = documentsApi.getPreviewUrl(docId)
+  window.open(previewUrl, '_blank')
 }
 
 const sendMessage = async () => {
@@ -1198,6 +1213,20 @@ onMounted(() => {
 
 .document-item:hover .doc-delete {
   opacity: 1;
+}
+
+.doc-preview {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: var(--primary-color);
+}
+
+.document-item:hover .doc-preview {
+  opacity: 1;
+}
+
+.doc-preview:hover {
+  color: #667eea;
 }
 
 .ai-tools-grid {

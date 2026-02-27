@@ -4,9 +4,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from backend.config import settings
 from backend.database import engine
-from backend.models import Base, Notebook, Document, Conversation, Message
+from backend.models import Base, Notebook, Document, Conversation, Message, Note
 from backend.config_model import Config
-from backend.routers import notebooks, documents, chat, content, config, podcast
+from backend.routers import notebooks, documents, chat, content, config, podcast, notes
 import os
 
 # Create database tables
@@ -63,6 +63,12 @@ app.include_router(
     podcast.router,
     prefix=f"{settings.API_V1_PREFIX}/podcast",
     tags=["podcast"]
+)
+
+app.include_router(
+    notes.router,
+    prefix=f"{settings.API_V1_PREFIX}/notes",
+    tags=["notes"]
 )
 
 # Mount static files for frontend

@@ -35,6 +35,15 @@ export interface Message {
   created_at: string
 }
 
+export interface Note {
+  id: number
+  notebook_id: number
+  title: string
+  content?: string
+  created_at: string
+  updated_at?: string
+}
+
 export const notebooksApi = {
   list: () => api.get<Notebook[]>('/notebooks/'),
   
@@ -220,4 +229,21 @@ export const podcastApi = {
     
     return await response.blob()
   }
+}
+
+export const notesApi = {
+  list: (notebookId: number) => 
+    api.get<Note[]>(`/notes/notebook/${notebookId}`),
+  
+  create: (data: { notebook_id: number; title: string; content?: string }) => 
+    api.post<Note>('/notes/', data),
+  
+  get: (id: number) => 
+    api.get<Note>(`/notes/${id}`),
+  
+  update: (id: number, data: { title?: string; content?: string }) => 
+    api.put<Note>(`/notes/${id}`, data),
+  
+  delete: (id: number) => 
+    api.delete(`/notes/${id}`)
 }

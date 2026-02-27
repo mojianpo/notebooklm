@@ -46,3 +46,13 @@ class Message(Base):
     role = Column(String(20), nullable=False)  # Use String for SQLite compatibility
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
+
+class Note(Base):
+    __tablename__ = "notes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    notebook_id = Column(Integer, ForeignKey("notebooks.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())

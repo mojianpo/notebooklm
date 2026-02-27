@@ -203,7 +203,94 @@
           </div>
         </div>
       </div>
+
+      <div class="notes-panel glass-card">
+        <div class="notes-header">
+          <div class="notes-title">
+            <el-icon><Notebook /></el-icon>
+            <span>我的笔记</span>
+          </div>
+          <button class="add-note-btn" @click="showAddNoteDialog = true" title="添加笔记">
+            <el-icon><Plus /></el-icon>
+          </button>
+        </div>
+        
+        <div class="notes-list">
+          <div
+            v-for="note in notes"
+            :key="note.id"
+            class="note-item"
+            @click="previewNote(note)"
+          >
+            <div class="note-item-header">
+              <span class="note-item-title">{{ note.title }}</span>
+              <el-button
+                type="text"
+                size="small"
+                :icon="Delete"
+                class="note-delete-btn"
+                @click.stop="deleteNote(note.id)"
+              />
+            </div>
+            <div class="note-item-preview">{{ getNotePreview(note.content) }}</div>
+            <div class="note-item-time">{{ formatDate(note.created_at) }}</div>
+          </div>
+          
+          <el-empty
+            v-if="notes.length === 0"
+            description="暂无笔记"
+            :image-size="40"
+          />
+        </div>
+      </div>
     </div>
+
+    <el-dialog
+      v-model="showAddNoteDialog"
+      title="添加笔记"
+      width="500px"
+      class="note-dialog"
+    >
+      <el-form :model="noteForm" label-width="60px">
+        <el-form-item label="标题">
+          <el-input v-model="noteForm.title" placeholder="请输入笔记标题" />
+        </el-form-item>
+        <el-form-item label="内容">
+          <el-input
+            v-model="noteForm.content"
+            type="textarea"
+            :rows="6"
+            placeholder="请输入笔记内容"
+          />
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showAddNoteDialog = false">取消</el-button>
+          <el-button type="primary" @click="createNote" :disabled="!noteForm.title.trim()">
+            确定
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      v-model="showPreviewDialog"
+      :title="previewingNote?.title || '笔记预览'"
+      width="600px"
+      class="note-dialog"
+    >
+      <div class="note-preview-content">
+        {{ previewingNote?.content || '暂无内容' }}
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showPreviewDialog = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <el-dialog
       v-model="showUploadDialog"
@@ -350,10 +437,12 @@ import {
   DocumentCopy,
   Check,
   ChatDotRound,
-  WarningFilled
+  WarningFilled,
+  Plus
 } from '@element-plus/icons-vue'
 import { useNotebookStore } from '../stores/notebook'
-import { documentsApi, chatApi, contentApi, podcastApi } from '../api/notebooks'
+import { documentsApi, chatApi, contentApi, podcastApi, notesApi } from '../api/notebooks'
+import type { Note } from '../api/notebooks'
 import Mindmap from '../components/Mindmap.vue'
 
 const route = useRoute()
@@ -381,6 +470,15 @@ const podcastAudioUrl = ref('')
 const chatContainer = ref<HTMLElement>()
 const audioElement = ref<HTMLAudioElement | null>(null)
 
+const notes = ref<Note[]>([])
+const showAddNoteDialog = ref(false)
+const showPreviewDialog = ref(false)
+const previewingNote = ref<Note | null>(null)
+const noteForm = ref({
+  title: '',
+  content: ''
+})
+
 const notebook = computed(() => store.currentNotebook)
 const documents = computed(() => store.documents)
 const messages = computed(() => store.messages)
@@ -398,6 +496,7 @@ const loadNotebook = async () => {
   loading.value = true
   try {
     await store.loadNotebook(Number(route.params.id))
+    await loadNotes()
   } catch (error) {
     ElMessage.error('加载笔记本失败')
     console.error(error)
@@ -405,6 +504,79 @@ const loadNotebook = async () => {
     loading.value = false
   }
 }
+
+const loadNotes = async () => {
+  try {
+    const data = await notesApi.list(Number(route.params.id))
+    notes.value = data || []
+  } catch (error) {
+    console.error('加载笔记失败:', error)
+  }
+}
+
+const createNote = async () => {
+  if (!noteForm.value.title.trim()) {
+    ElMessage.warning('请输入笔记标题')
+    return
+  }
+  
+  try {
+    await notesApi.create({
+      notebook_id: Number(route.params.id),
+      title: noteForm.value.title,
+      content: noteForm.value.content
+    })
+    ElMessage.success('笔记创建成功')
+    showAddNoteDialog.value = false
+    noteForm.value = { title: '', content: '' }
+    await loadNotes()
+  } catch (error) {
+    ElMessage.error('创建笔记失败')
+    console.error(error)
+  }
+}
+
+const deleteNote = async (noteId: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条笔记吗？', '确认删除', {
+      type: 'warning'
+    })
+    await notesApi.delete(noteId)
+    ElMessage.success('删除成功')
+    await loadNotes()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const previewNote = (note: Note) => {
+  previewingNote.value = note
+  showPreviewDialog.value = true
+}
+
+const getNotePreview = (content?: string) => {
+  if (!content) return '暂无内容'
+  return content.length > 50 ? content.substring(0, 50) + '...' : content
+}
+
+const formatDate = (dateStr: string): string => {
+  // 1. 校验日期合法性
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    return '无效日期'; // 非法日期返回友好提示
+  }
+
+  // 2. 使用 toLocaleString 而非 toLocaleDateString，支持日期+时间格式化
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',    // 两位数月份（01-12）
+    day: '2-digit',      // 两位数日期（01-31）
+    hour: '2-digit',     // 两位数小时（00-23 或 01-12，取决于 hour12）
+    minute: '2-digit',   // 两位数分钟（00-59）
+    hour12: false        // 强制 24 小时制（可选，根据需求调整）
+  });
+};
 
 const goBack = () => {
   router.push('/')
@@ -763,6 +935,7 @@ onMounted(() => {
 .notebook-info-card {
   margin-bottom: 20px;
   padding: 16px;
+  overflow: hidden !important;
 }
 
 .notebook-info {
@@ -825,7 +998,7 @@ onMounted(() => {
 
 .detail-content {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 360px 1fr 200px;
   gap: 24px;
   flex: 1;
   min-height: 0;
@@ -1890,6 +2063,10 @@ onMounted(() => {
   .suggestion-cards {
     grid-template-columns: 1fr;
   }
+
+  .notes-panel {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1976,5 +2153,156 @@ onMounted(() => {
   color: var(--text-secondary);
   margin-top: 16px;
   margin-bottom: 0;
+}
+
+.notes-panel {
+  width: 200px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.notes-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.notes-title .el-icon {
+  color: var(--primary-color);
+  font-size: 16px;
+}
+
+.add-note-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.add-note-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.notes-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.notes-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notes-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notes-list::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.2);
+  border-radius: 2px;
+}
+
+.note-item {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(102, 126, 234, 0.03);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 8px;
+}
+
+.note-item:hover {
+  background: rgba(102, 126, 234, 0.08);
+  border-color: rgba(102, 126, 234, 0.15);
+}
+
+.note-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.note-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.note-delete-btn {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  padding: 2px;
+  color: var(--text-tertiary);
+}
+
+.note-item:hover .note-delete-btn {
+  opacity: 1;
+}
+
+.note-delete-btn:hover {
+  color: #f56c6c;
+}
+
+.note-item-preview {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.note-item-time {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+}
+
+.note-dialog .el-dialog__body {
+  padding: 20px;
+}
+
+.note-preview-content {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
 }
 </style>

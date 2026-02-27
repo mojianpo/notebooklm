@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
 from backend.database import get_db
-from backend.models import Notebook, Document
+from backend.models import Notebook, Document, Message, Conversation
 from backend.schemas import NotebookCreate, NotebookResponse, DocumentResponse
 import json
 
@@ -22,16 +23,19 @@ def list_notebooks(db: Session = Depends(get_db)):
     """List all notebooks"""
     notebooks = db.query(Notebook).order_by(Notebook.created_at.desc()).all()
     
-    # Add document count to each notebook
     result = []
     for notebook in notebooks:
+        conversation_ids = [c.id for c in db.query(Conversation.id).filter(Conversation.notebook_id == notebook.id).all()]
+        message_count = db.query(Message).filter(Message.conversation_id.in_(conversation_ids)).count() if conversation_ids else 0
+        
         notebook_dict = {
             "id": notebook.id,
             "name": notebook.name,
             "description": notebook.description,
             "created_at": notebook.created_at,
             "updated_at": notebook.updated_at,
-            "document_count": db.query(Document).filter(Document.notebook_id == notebook.id).count()
+            "document_count": db.query(Document).filter(Document.notebook_id == notebook.id).count(),
+            "message_count": message_count
         }
         result.append(notebook_dict)
     

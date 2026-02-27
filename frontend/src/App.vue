@@ -48,7 +48,12 @@
           </nav>
 
           <div class="header-actions">
-           
+            <div class="user-info">
+              <div class="user-avatar">
+                <el-icon :size="18"><User /></el-icon>
+              </div>
+              <span class="user-name">Admin</span>
+            </div>
           </div>
         </div>
       </el-header>
@@ -66,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { Notebook, Setting, Folder, InfoFilled } from '@element-plus/icons-vue'
+import { Notebook, Setting, Folder, InfoFilled, User } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>
@@ -224,6 +229,44 @@ import { Notebook, Setting, Folder, InfoFilled } from '@element-plus/icons-vue'
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(102, 126, 234, 0.15);
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12) 0%, rgba(118, 75, 162, 0.12) 100%);
+  border-color: rgba(102, 126, 234, 0.25);
+  transform: translateY(-1px);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .status-indicator {

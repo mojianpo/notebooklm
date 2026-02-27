@@ -86,3 +86,23 @@ class ContentGenerationResponse(BaseModel):
     content_type: str
     content: str
     format: str
+
+class NoteBase(BaseModel):
+    title: str
+    content: Optional[str] = None
+
+class NoteCreate(NoteBase):
+    notebook_id: int
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+class NoteResponse(NoteBase):
+    id: int
+    notebook_id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True

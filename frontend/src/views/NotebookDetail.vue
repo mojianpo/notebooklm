@@ -125,7 +125,17 @@
                     <span class="message-role">{{ msg.role === 'user' ? '你' : 'AI 助手' }}</span>
                     <span class="message-time">{{ formatTime(msg.created_at) }}</span>
                   </div>
-                  <div class="message-text" v-html="renderMarkdown(msg.content)"></div>
+                  <div class="message-text-wrapper">
+                    <div class="message-text" v-html="renderMarkdown(msg.content)"></div>
+                    <button
+                      v-if="msg.role === 'assistant'"
+                      class="add-to-note-btn"
+                      @click="addMessageToNote(msg)"
+                      title="添加到我的笔记"
+                    >
+                      <el-icon><Notebook /></el-icon>
+                    </button>
+                  </div>
                 </div>
               </div>
             </transition-group>
@@ -356,6 +366,10 @@
             <el-icon><DocumentCopy /></el-icon>
             复制
           </el-button>
+          <el-button type="text" @click="addGeneratedContentToNote">
+            <el-icon><Notebook /></el-icon>
+            添加到我的笔记
+          </el-button>
           <el-button 
             v-if="currentContentType === 'podcast' && !isGeneratingAudio" 
             type="text" 
@@ -554,6 +568,32 @@ const deleteNote = async (noteId: number) => {
 const previewNote = (note: Note) => {
   previewingNote.value = note
   showPreviewDialog.value = true
+}
+
+const addMessageToNote = async (assistantMsg: any) => {
+  const allMessages = messages.value
+  const msgIndex = allMessages.findIndex(m => m.id === assistantMsg.id)
+  
+  let userQuestion = 'AI 对话笔记'
+  if (msgIndex > 0 && allMessages[msgIndex - 1].role === 'user') {
+    userQuestion = allMessages[msgIndex - 1].content
+    if (userQuestion.length > 50) {
+      userQuestion = userQuestion.substring(0, 50) + '...'
+    }
+  }
+  
+  try {
+    await notesApi.create({
+      notebook_id: Number(route.params.id),
+      title: userQuestion,
+      content: assistantMsg.content
+    })
+    ElMessage.success('已添加到笔记')
+    await loadNotes()
+  } catch (error) {
+    ElMessage.error('添加笔记失败')
+    console.error(error)
+  }
 }
 
 const getNotePreview = (content?: string) => {
@@ -792,6 +832,26 @@ const copyContent = () => {
 const clearGeneratedContent = () => {
   generatedContent.value = ''
   podcastAudioUrl.value = ''
+}
+
+const addGeneratedContentToNote = async () => {
+  if (!generatedContent.value) {
+    ElMessage.warning('没有可添加的内容')
+    return
+  }
+  
+  try {
+    await notesApi.create({
+      notebook_id: Number(route.params.id),
+      title: currentContentTool.value || 'AI生成内容',
+      content: generatedContent.value
+    })
+    ElMessage.success('已添加到笔记')
+    await loadNotes()
+  } catch (error) {
+    ElMessage.error('添加笔记失败')
+    console.error(error)
+  }
 }
 
 const generatePodcastAudio = async () => {
@@ -1426,6 +1486,21 @@ onMounted(() => {
   max-width: 100%;
 }
 
+.message-text-wrapper {
+  position: relative;
+}
+
+.message-wrapper.assistant .message-text-wrapper .message-text {
+  padding-bottom: 40px;
+}
+
+.message-wrapper.assistant .message-text {
+  background: #fff;
+  border: 1px solid rgba(102, 126, 234, 0.12);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+}
+
 .message-wrapper.user .message-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -1442,11 +1517,33 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.15);
 }
 
-.message-wrapper.assistant .message-text {
-  background: #fff;
-  border: 1px solid rgba(102, 126, 234, 0.12);
-  border-bottom-left-radius: 6px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+.add-to-note-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.message-text-wrapper:hover .add-to-note-btn {
+  opacity: 1;
+}
+
+.add-to-note-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
 }
 
 .message-wrapper.streaming .message-text {

@@ -5,10 +5,10 @@ from typing import List, Generator, Optional
 import json
 import logging
 from datetime import datetime
-from database import get_db
-from models import Conversation, Message, Document
-from schemas import ChatRequest, ConversationCreate, ConversationResponse
-from config_model import Config
+from backend.database import get_db
+from backend.models import Conversation, Message, Document
+from backend.schemas import ChatRequest, ConversationCreate, ConversationResponse
+from backend.config_model import Config
 
 try:
     from langchain_openai import ChatOpenAI

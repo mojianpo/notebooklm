@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
-from database import get_db
-from models import Document
-from schemas import DocumentResponse
+from backend.database import get_db
+from backend.models import Document
+from backend.schemas import DocumentResponse
 import os
 import asyncio
 import PyPDF2

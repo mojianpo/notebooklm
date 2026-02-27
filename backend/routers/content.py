@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
-from models import Document
-from config_model import Config
-from schemas import ContentGenerationRequest, ContentGenerationResponse
-from config import settings
+from backend.database import get_db
+from backend.models import Document
+from backend.config_model import Config
+from backend.schemas import ContentGenerationRequest, ContentGenerationResponse
+from backend.config import settings
 import json
 import asyncio
 

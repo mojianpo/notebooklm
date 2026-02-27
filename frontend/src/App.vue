@@ -48,10 +48,7 @@
           </nav>
 
           <div class="header-actions">
-            <div class="status-indicator">
-              <div class="status-dot"></div>
-              <span class="status-text">系统在线</span>
-            </div>
+           
           </div>
         </div>
       </el-header>

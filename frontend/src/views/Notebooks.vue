@@ -497,7 +497,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
-  min-height: 200px;
+  min-height: 100px;
 }
 
 .notebook-card {

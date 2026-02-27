@@ -2,11 +2,11 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from config import settings
-from database import engine
-from models import Base, Notebook, Document, Conversation, Message
-from config_model import Config
-from routers import notebooks, documents, chat, content, config
+from backend.config import settings
+from backend.database import engine
+from backend.models import Base, Notebook, Document, Conversation, Message
+from backend.config_model import Config
+from backend.routers import notebooks, documents, chat, content, config, podcast
 import os
 
 # Create database tables
@@ -57,6 +57,12 @@ app.include_router(
     config.router,
     prefix=f"{settings.API_V1_PREFIX}/config",
     tags=["config"]
+)
+
+app.include_router(
+    podcast.router,
+    prefix=f"{settings.API_V1_PREFIX}/podcast",
+    tags=["podcast"]
 )
 
 # Mount static files for frontend

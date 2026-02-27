@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from config import settings
+from backend.config import settings
 
 # Create database engine (support both SQLite and MySQL)
 if settings.DATABASE_URL.startswith('sqlite'):

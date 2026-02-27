@@ -204,3 +204,20 @@ export const contentApi = {
   
   getTypes: () => api.get('/content/types')
 }
+
+export const podcastApi = {
+  generateAudio: async (script: string): Promise<Blob> => {
+    const response = await fetch('/api/v1/podcast/convert-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ script })
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
+      throw new Error(errorData.detail || `HTTP ${response.status}`)
+    }
+    
+    return await response.blob()
+  }
+}

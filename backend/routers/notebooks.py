@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from database import get_db
-from models import Notebook, Document
-from schemas import NotebookCreate, NotebookResponse, DocumentResponse
+from backend.database import get_db
+from backend.models import Notebook, Document
+from backend.schemas import NotebookCreate, NotebookResponse, DocumentResponse
+import json
 
 router = APIRouter()
 

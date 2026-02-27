@@ -269,6 +269,15 @@
             <el-icon><DocumentCopy /></el-icon>
             复制
           </el-button>
+          <el-button 
+            v-if="currentContentType === 'podcast' && !isGeneratingAudio" 
+            type="text" 
+            @click="generatePodcastAudio"
+            :loading="isGeneratingAudio"
+          >
+            <el-icon><Microphone /></el-icon>
+            生成音频
+          </el-button>
           <el-button type="text" @click="clearGeneratedContent">
             <el-icon><Delete /></el-icon>
             关闭
@@ -276,8 +285,31 @@
         </div>
       </div>
       <div class="result-body">
+          <!-- 播客音频播放器 -->
+        <div v-if="currentContentType === 'podcast' && podcastAudioUrl" class="podcast-player">
+          <h4>播客音频</h4>
+          <audio 
+            ref="audioElement" 
+            :src="podcastAudioUrl" 
+            controls 
+            class="audio-player"
+          >
+            您的浏览器不支持音频播放。
+          </audio>
+        </div>
+        
+        <!-- 音频生成中 -->
+        <div v-if="isGeneratingAudio" class="audio-generating">
+          <div class="generating-animation">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+          <p>正在生成音频，请稍候...</p>
+        </div>
         <Mindmap v-if="currentContentType === 'mindmap'" :markdown="generatedContent" />
         <div v-else class="result-content" v-html="renderMarkdown(generatedContent)"></div>
+        
       </div>
     </div>
     
@@ -321,7 +353,7 @@ import {
   WarningFilled
 } from '@element-plus/icons-vue'
 import { useNotebookStore } from '../stores/notebook'
-import { documentsApi, chatApi, contentApi } from '../api/notebooks'
+import { documentsApi, chatApi, contentApi, podcastApi } from '../api/notebooks'
 import Mindmap from '../components/Mindmap.vue'
 
 const route = useRoute()
@@ -343,8 +375,11 @@ const currentContentTool = ref('')
 const currentContentType = ref('')
 const customPrompt = ref('')
 const generatedContent = ref('')
+const isGeneratingAudio = ref(false)
+const podcastAudioUrl = ref('')
 
 const chatContainer = ref<HTMLElement>()
+const audioElement = ref<HTMLAudioElement | null>(null)
 
 const notebook = computed(() => store.currentNotebook)
 const documents = computed(() => store.documents)
@@ -584,6 +619,27 @@ const copyContent = () => {
 
 const clearGeneratedContent = () => {
   generatedContent.value = ''
+  podcastAudioUrl.value = ''
+}
+
+const generatePodcastAudio = async () => {
+  if (!generatedContent.value) {
+    ElMessage.warning('请先生成播客脚本')
+    return
+  }
+  
+  isGeneratingAudio.value = true
+  try {
+    const audioBlob = await podcastApi.generateAudio(generatedContent.value)
+    const url = URL.createObjectURL(audioBlob)
+    podcastAudioUrl.value = url
+    ElMessage.success('音频生成成功')
+  } catch (error) {
+    ElMessage.error('音频生成失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    console.error('音频生成失败:', error)
+  } finally {
+    isGeneratingAudio.value = false
+  }
 }
 
 const renderMarkdown = (text: string) => {
@@ -789,6 +845,7 @@ onMounted(() => {
   display: flex;
   margin-bottom: 10px;
   flex-direction: column;
+  overflow: auto;
 }
 
 .card-header {
@@ -914,26 +971,27 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  max-height: 280px;
+  max-height: 400px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 8px;
 }
 
 .ai-tools-grid::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 
 .ai-tools-grid::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
 }
 
 .ai-tools-grid::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.2);
-  border-radius: 2px;
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 3px;
 }
 
 .ai-tools-grid::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.3);
+  background: rgba(102, 126, 234, 0.5);
 }
 
 .ai-tool-btn {
@@ -1720,10 +1778,17 @@ onMounted(() => {
 }
 
 .generating-section {
-  margin-top: 24px;
-  padding: 60px 20px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  padding: 40px 60px;
   text-align: center;
-  border-radius: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
 }
 
 .generating-animation {
@@ -1863,5 +1928,53 @@ onMounted(() => {
   50% {
     transform: translateY(-8px);
   }
+}
+
+.podcast-player {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(240, 147, 251, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
+  border: 1px solid rgba(240, 147, 251, 0.1);
+  border-radius: 12px;
+}
+
+.podcast-player h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.podcast-player h4::before {
+  content: '🎙️';
+  font-size: 16px;
+}
+
+.audio-player {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(240, 147, 251, 0.2);
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.audio-generating {
+  margin-top: 20px;
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(102, 126, 234, 0.03);
+  border-radius: 12px;
+}
+
+.audio-generating p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 16px;
+  margin-bottom: 0;
 }
 </style>
